@@ -15,7 +15,7 @@ export default function Login() {
     return ( 
         <main className="
                 relative h-screen w-screen 
-                overflow-hidden overscroll-none
+                overflow-scroll overscroll-none
                 flex justify-center items-center
             ">
             <Image
@@ -27,7 +27,7 @@ export default function Login() {
             />
             <div className="
                 relative z-10
-                h-[75%] aspect-[9/10] min-h-100 
+                h-[75%] aspect-[9/10] min-h-100 max-h-screen
                 [container-type:inline-size]
             ">
                 <div className="
