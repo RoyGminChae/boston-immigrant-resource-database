@@ -13,8 +13,7 @@ export default function faq() {
     const faqItems = [
         {
             trigger: "What is BIRD?",
-            content:
-            "The Boston Immigrant Resource Dashboard (BIRD) is a real-time, online platform that helps immigrant-serving providers and communities quickly find up-to-date information on essential resources in Boston, such as legal aid, ESL classes, and workforce development.",
+            content: "The Boston Immigrant Resource Dashboard (BIRD) is a real-time, online platform that helps immigrant-serving providers and communities quickly find up-to-date information on essential resources in Boston, such as legal aid, ESL classes, and workforce development.",
         },
         {
             trigger: "Who can use BIRD?",
