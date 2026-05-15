@@ -14,6 +14,8 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, activePage = "About BIRD" }) 
     { name: "Additional Resources", icon: "/icons/arrow.svg", href: "/resources" },
     { name: "Testimonials", icon: "/icons/star.svg", href: "/testimonials" },
     { name: "Contact Us", icon: "/icons/calendar.svg", href: "/contact" },
+    { name: "Saved Services", icon: "/icons/star.svg",href: "/saved"},
+
   ];
 
   return (
