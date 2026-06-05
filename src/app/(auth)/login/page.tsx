@@ -1,5 +1,4 @@
 import Image from "next/image";
-import logo from "/public/icons/Just_BIRD_logo_blue.png";
 import {
   InputGroup,
   InputGroupAddon,
@@ -37,8 +36,10 @@ export default function Login() {
                 ">
                     <div className="flex justify-center h-[10cqw] mb-[1cqw]">
                         <Image
-                            src={logo}
-                            alt=""
+                            src="/icons/Just_BIRD_logo_blue.png"
+                            alt="BIRD"
+                            width={120}
+                            height={40}
                             className="object-contain"
                         />
                     </div>

@@ -40,6 +40,8 @@
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
+  --color-bird-accent: var(--bird-accent);
+  --color-bird-accent-hover: var(--bird-accent-hover);
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
@@ -54,6 +56,8 @@ body {
 }
 
 :root {
+  --bird-accent: #388EC2;
+  --bird-accent-hover: #2B7AA8;
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);
   --card: oklch(1 0 0);
