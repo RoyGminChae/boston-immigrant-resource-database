@@ -1,20 +1,55 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Play, Upload } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
-
-const CONTACT_REASONS = ["More information", "Requesting Access"] as const;
-const CONTACT_METHODS = ["Email", "Phone"] as const;
+import { client } from "@/lib/sanity";
 
 export default function ContactSection() {
   const [contactMethod, setContactMethod] = useState<string>("Email");
   const [contactReason, setContactReason] = useState<string>("More information");
+  const [contactMethods, setContactMethods] = useState<string[]>(["Email", "Phone"]);
+  const [contactReasons, setContactReasons] = useState<string[]>([
+    "More information",
+    "Requesting Access",
+  ]);
   const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
+  const [loadingSettings, setLoadingSettings] = useState<boolean>(true);
+
+  useEffect(() => {
+    async function fetchSettings() {
+      try {
+        const settings = await client.fetch(`*[_type == "contactSettings"][0]{
+          contactMethods,
+          contactReasons
+        }`);
+        if (settings) {
+          setContactMethods(settings.contactMethods || ["Email", "Phone"]);
+          setContactReasons(settings.contactReasons || [
+            "More information",
+            "Requesting Access",
+          ]);
+          // Set initial values to the first item in each array, or keep current if not empty
+          if (contactMethods.length > 0 && contactMethod === "Email") {
+            setContactMethod(contactMethods[0]);
+          }
+          if (contactReasons.length > 0 && contactReason === "More information") {
+            setContactReason(contactReasons[0]);
+          }
+        }
+      } catch (error) {
+        console.error("Failed to fetch contact settings:", error);
+      } finally {
+        setLoadingSettings(false);
+      }
+    }
+
+    fetchSettings();
+  }, []);
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -96,7 +131,7 @@ export default function ContactSection() {
           <div className="space-y-2">
             <Label>Preferred Method of Contact</Label>
             <div className="flex flex-wrap gap-2">
-              {CONTACT_METHODS.map((method) => (
+              {contactMethods.map((method) => (
                 <button
                   key={method}
                   type="button"
@@ -145,7 +180,7 @@ export default function ContactSection() {
           <div className="space-y-2">
             <Label>Preferred Method of Contact</Label>
             <div className="flex flex-wrap gap-2">
-              {CONTACT_REASONS.map((reason) => (
+              {contactReasons.map((reason) => (
                 <button
                   key={reason}
                   type="button"

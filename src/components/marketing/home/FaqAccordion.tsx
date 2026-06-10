@@ -1,5 +1,4 @@
 "use client";
-
 import {
   Accordion,
   AccordionContent,
@@ -13,7 +12,7 @@ type FaqItem = {
 };
 
 type FaqAccordionProps = {
-  items: readonly FaqItem[];
+  items: FaqItem[];
   defaultOpen?: string;
   centered?: boolean;
 };

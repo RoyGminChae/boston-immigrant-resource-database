@@ -1,9 +1,18 @@
 import Image from "next/image";
-
 import FaqAccordion from "./FaqAccordion";
-import { GENERAL_FAQ } from "./data";
+import { client } from "@/lib/sanity";
 
-export default function FaqSection() {
+async function getGeneralFaqs() {
+  return client.fetch(`*[_type == "faqItem" && section == "general"]{
+    _id,
+    trigger,
+    content
+  }`)
+}
+
+export default async function FaqSection() {
+  const faqs = await getGeneralFaqs()
+
   return (
     <section className="bg-white py-16 md:py-20">
       <div className="mx-auto max-w-6xl px-6 lg:px-10">
@@ -16,7 +25,7 @@ export default function FaqSection() {
 
         <div className="mt-8 grid gap-8 lg:grid-cols-2 lg:items-start">
           <div className="rounded-2xl bg-[#F9FBFF] p-6">
-            <FaqAccordion items={GENERAL_FAQ} defaultOpen="0" />
+            <FaqAccordion items={faqs} defaultOpen="0" />
           </div>
 
           <div className="relative min-h-[320px] overflow-hidden rounded-2xl lg:min-h-[400px]">

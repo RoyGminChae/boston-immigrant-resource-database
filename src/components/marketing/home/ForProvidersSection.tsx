@@ -1,7 +1,17 @@
 import FaqAccordion from "./FaqAccordion";
-import { FOR_PROVIDERS_FAQ } from "./data";
+import { client } from "@/lib/sanity";
 
-export default function ForProvidersSection() {
+async function getProviderFaqs() {
+  return client.fetch(`*[_type == "faqItem" && section == "providers"]{
+    _id,
+    trigger,
+    content
+  }`)
+}
+
+export default async function ForProvidersSection() {
+  const faqs = await getProviderFaqs()
+
   return (
     <section className="bg-white py-16 md:py-20">
       <div className="mx-auto max-w-6xl px-6 lg:px-10">
@@ -9,7 +19,7 @@ export default function ForProvidersSection() {
           For Providers
         </h2>
         <div className="mt-8 rounded-2xl bg-white px-2 md:px-6">
-          <FaqAccordion items={FOR_PROVIDERS_FAQ} defaultOpen="0" centered />
+          <FaqAccordion items={faqs} defaultOpen="0" centered />
         </div>
       </div>
     </section>

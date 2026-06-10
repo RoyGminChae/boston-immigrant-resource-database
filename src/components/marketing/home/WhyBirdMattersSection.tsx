@@ -1,6 +1,5 @@
 import { FileText, Globe, Users, UsersRound } from "lucide-react";
-
-import { STATS } from "./data";
+import { client } from "@/lib/sanity";
 
 const ICONS = {
   users: Users,
@@ -9,7 +8,17 @@ const ICONS = {
   resources: FileText,
 } as const;
 
-export default function WhyBirdMattersSection() {
+async function getStats() {
+  return client.fetch(`*[_type == "stat"]{
+    value,
+    label,
+    icon
+  }`)
+}
+
+export default async function WhyBirdMattersSection() {
+  const stats = await getStats()
+
   return (
     <section className="bg-white py-16 md:py-20">
       <div className="mx-auto max-w-6xl px-6 text-center lg:px-10">
@@ -21,8 +30,8 @@ export default function WhyBirdMattersSection() {
         </h2>
 
         <div className="mt-12 grid gap-10 sm:grid-cols-2 lg:grid-cols-4">
-          {STATS.map((stat) => {
-            const Icon = ICONS[stat.icon];
+          {stats.map((stat: { value: string; label: string; icon: string }) => {
+            const Icon = (ICONS as Record<string, any>)[stat.icon] || Users;
             return (
               <div key={stat.label} className="flex flex-col items-center gap-3">
                 <div className="flex h-16 w-16 items-center justify-center rounded-full bg-bird-accent text-white">
