@@ -1,6 +1,7 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { MoreVertical } from "lucide-react";
+import { client } from "@/lib/sanity";
 
 type SidebarProps = {
   isOpen: boolean;
@@ -8,15 +9,24 @@ type SidebarProps = {
 };
 
 const Sidebar: React.FC<SidebarProps> = ({ isOpen, activePage = "About BIRD" }) => {
-  const menuItems = [
-    { name: "About BIRD", icon: "/icons/dashboard.svg", href: "/" },
-    { name: "FAQs", icon: "/icons/page.svg", href: "/faq" },
-    { name: "Additional Resources", icon: "/icons/arrow.svg", href: "/resources" },
-    { name: "Testimonials", icon: "/icons/star.svg", href: "/testimonials" },
-    { name: "Contact Us", icon: "/icons/calendar.svg", href: "/contact" },
-    { name: "Saved Services", icon: "/icons/star.svg",href: "/saved"},
+  const [menuItems, setMenuItems] = useState<Array<{ name: string; icon: string; href: string }>>([]);
 
-  ];
+  useEffect(() => {
+    async function fetchMenuItems() {
+      try {
+        const items = await client.fetch(`*[_type == "menuItem"]{
+          name,
+          "icon": icon.asset->url,
+          href
+        }`);
+        setMenuItems(items);
+      } catch (error) {
+        console.error("Failed to fetch menu items:", error);
+      }
+    }
+
+    fetchMenuItems();
+  }, []);
 
   return (
     <div
