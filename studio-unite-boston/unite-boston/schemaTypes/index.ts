@@ -12,6 +12,7 @@ import contactSettings from './contactSettings';
 import footerColumn from './footerColumn';
 import navLink from './navLink';
 import footerLink from './footerLink';
+import resourceSection from './resourceSection';
 
 export const schemaTypes = [
   stat,
@@ -28,4 +29,5 @@ export const schemaTypes = [
   footerColumn,
   navLink,
   footerLink,
+  resourceSection,
 ];
