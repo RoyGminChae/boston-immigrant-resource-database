@@ -257,7 +257,6 @@ export default function MapPage() {
     return filteredServices.find((service) => service.id === selectedServiceId) ?? null;
   }, [filteredServices, selectedServiceId]);
 
-  console.log(selectedService);
   useEffect(() => {
     if (selectedServiceId && !selectedService) {
       setSelectedServiceId(null);
@@ -442,12 +441,12 @@ export default function MapPage() {
   }, [panelView]);
 
   return (
-    <div className="flex max-h-screen items-stretch bg-slate-100 p-0 m-0">
+    <div className="flex min-h-dvh items-stretch bg-slate-100 p-0 m-0">
       <Sidebar isOpen={true} activePage="Search Resources" />
 
-      <main className="ml-55 flex-1 bg-[#f2f4f7] px-3 py-2 text-slate-800">
-        <section className="mx-auto min-h-[calc(100vh-1rem)] rounded-[28px] bg-[#f8fafc] px-4 py-4 shadow-[0_0_0_1px_rgba(229,231,235,0.9)]">
-          <div className="flex flex-col gap-4 xl:h-[calc(100vh-2rem)] xl:flex-row">
+      <main className="ml-55 flex min-h-dvh flex-1 bg-[#f2f4f7] px-3 py-2 text-slate-800">
+        <section className="mx-auto flex min-h-[calc(100dvh-1rem)] flex-1 flex-col rounded-[28px] bg-[#f8fafc] px-4 py-4 shadow-[0_0_0_1px_rgba(229,231,235,0.9)]">
+          <div className="flex flex-col gap-4 xl:flex-row">
             <div className="flex min-w-0 flex-1 flex-col gap-4 xl:max-w-136">
               <div className="space-y-2">
                 <h1 className="text-[1.8rem] font-semibold tracking-tight text-[#4c8cc9] sm:text-[2.1rem]">
@@ -632,7 +631,10 @@ export default function MapPage() {
                           
                           <button
                             type="button"
-                            onClick={() => setPanelView("map")}
+                            onClick={() => {
+                              setPanelView("map")
+                              setSelectedServiceId(null);
+                            }}
                             className="inline-flex items-center justify-center rounded-md border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:bg-slate-50 cursor-pointer"
                           >
                             Back to map
