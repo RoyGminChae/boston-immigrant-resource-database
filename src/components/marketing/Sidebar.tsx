@@ -33,15 +33,14 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, activePage = "About BIRD" }) 
       } overflow-hidden`}
     >
       {/* Logo Section */}
-      <div className="p-4 flex items-center gap-2 border-b border-slate-200">
-        <div className="w-8 h-8 flex items-center justify-center shrink-0">
+      <div className="p-1 flex items-center gap-2 border-b border-slate-200">
+        <div className="flex items-center justify-center shrink-0">
           <img
-            src="/icons/Just_BIRD_logo_white.png"
+            src="/icons/BIRDLogo_Blue.svg"
             alt="BIRD"
-            className="w-8 h-8 object-contain"
+            className="w-15 object-contain"
           />
         </div>
-        <h2 className="text-sm font-bold tracking-tight leading-none">BIRD</h2>
       </div>
 
       {/* Workflows Section */}
