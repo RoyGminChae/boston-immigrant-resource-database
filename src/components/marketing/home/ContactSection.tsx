@@ -200,7 +200,7 @@ export default function ContactSection() {
 
           <div className="space-y-2">
             <Label>Link &amp; Media</Label>
-            <div className="flex min-h-[120px] flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-gray-200 bg-[#fafafa] p-6 text-center">
+            <div className="flex min-h-30 flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-gray-200 bg-[#fafafa] p-6 text-center">
               <Upload className="h-5 w-5 text-bird-accent" />
               <p className="text-sm text-black">Drag and Drop or upload media</p>
             </div>

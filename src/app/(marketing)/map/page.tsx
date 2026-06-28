@@ -780,11 +780,11 @@ export default function MapPage() {
                         <div className="mt-3 space-y-3 text-sm text-slate-700">
                           <div className="flex items-start gap-3">
                             <span className="mt-0.5 text-slate-400">◦</span>
-                            <span>{selectedServiceLanguages}</span>
+                            <span><span className="font-bold">Languages:</span> {selectedServiceLanguages}</span>
                           </div>
                           <div className="flex items-start gap-3">
                             <span className="mt-0.5 text-slate-400">◦</span>
-                            <span>{selectedServiceLocation}</span>
+                            <span><span className="font-bold">Location:</span> {selectedServiceLocation}</span>
                           </div>
                           <div className="flex items-start gap-3">
                             <span className="mt-0.5 text-slate-400">◦</span>
@@ -829,7 +829,7 @@ export default function MapPage() {
 
                 <div className={isDescriptionView ? "hidden" : "flex-1 min-h-0 px-0 py-0"}>
                   <div className="mx-auto flex h-full max-w-3xl min-h-0 flex-col justify-center px-0 py-0">
-                    <div className="relative h-full w-full overflow-hidden rounded-[10px] border border-slate-200 bg-slate-50 shadow-sm">
+                    <div className="relative h-[90%] w-full overflow-hidden rounded-[10px] border border-slate-200 bg-slate-50 shadow-sm">
                       <div ref={mapContainerRef} className="absolute inset-0 w-full" />
 
                       {!loading && !error && !filteredServices.some((service) => providerCoordinates[getProviderRecordId(service)]) ? (
