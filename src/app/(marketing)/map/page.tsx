@@ -32,6 +32,7 @@ type Service = {
   service_types: string;
   provider_email: string;
   provider_record_ID?: string;
+  last_modified?: string;
 };
 
 type Coordinates = {
@@ -45,6 +46,52 @@ type ServiceWithProvider = Service & {
 
 function getProviderRecordId(service: Service) {
   return service.provider_record_ID || service.provider;
+}
+
+function formatRelativeUpdateDate(value?: string) {
+  if (!value) {
+    return "Updated recently";
+  }
+
+  const parsedDate = new Date(value);
+  if (Number.isNaN(parsedDate.getTime())) {
+    return "Updated recently";
+  }
+
+  const elapsedDays = Math.floor((Date.now() - parsedDate.getTime()) / (1000 * 60 * 60 * 24));
+
+  if (elapsedDays <= 0) {
+    return "Updated today";
+  }
+
+  if (elapsedDays === 1) {
+    return "Updated 1 day ago";
+  }
+
+  return `Updated ${elapsedDays} days ago`;
+}
+
+function formatRelativeUpdateDateShort(value?: string) {
+  if (!value) {
+    return "Recent";
+  }
+
+  const parsedDate = new Date(value);
+  if (Number.isNaN(parsedDate.getTime())) {
+    return "Recent";
+  }
+
+  const elapsedDays = Math.floor((Date.now() - parsedDate.getTime()) / (1000 * 60 * 60 * 24));
+
+  if (elapsedDays <= 0) {
+    return "Today";
+  }
+
+  if (elapsedDays === 1) {
+    return "1 day ago";
+  }
+
+  return `${elapsedDays} days ago`;
 }
 
 const geocodeCache = new Map<string, Coordinates | null>();
@@ -210,6 +257,7 @@ export default function MapPage() {
     return filteredServices.find((service) => service.id === selectedServiceId) ?? null;
   }, [filteredServices, selectedServiceId]);
 
+  console.log(selectedService);
   useEffect(() => {
     if (selectedServiceId && !selectedService) {
       setSelectedServiceId(null);
@@ -281,8 +329,6 @@ export default function MapPage() {
         });
 
         const provider = service.providerDetails;
-        // console.log(service);
-        console.log(provider);
         const languages = provider?.language_support?.slice(0, 3).join(" · ") || "Language support varies";
         const location = provider?.address || "Location not listed";
         const serviceSummary = service.service_types || service.description || "Community service";
@@ -396,10 +442,10 @@ export default function MapPage() {
   }, [panelView]);
 
   return (
-    <div className="flex min-h-screen items-stretch bg-slate-100">
+    <div className="flex max-h-screen items-stretch bg-slate-100 p-0 m-0">
       <Sidebar isOpen={true} activePage="Search Resources" />
 
-      <main className="ml-52 flex-1 bg-[#f2f4f7] px-3 py-2 text-slate-800">
+      <main className="ml-55 flex-1 bg-[#f2f4f7] px-3 py-2 text-slate-800">
         <section className="mx-auto min-h-[calc(100vh-1rem)] rounded-[28px] bg-[#f8fafc] px-4 py-4 shadow-[0_0_0_1px_rgba(229,231,235,0.9)]">
           <div className="flex flex-col gap-4 xl:h-[calc(100vh-2rem)] xl:flex-row">
             <div className="flex min-w-0 flex-1 flex-col gap-4 xl:max-w-136">
@@ -454,7 +500,7 @@ export default function MapPage() {
               </div>
 
               <div className="rounded-[24px] bg-white p-0">
-                <div className="max-h-[75vh] space-y-4 overflow-y-auto pr-1 xl:h-[calc(100vh-12rem)]">
+                <div className=" space-y-4 overflow-y-auto pr-1 xl:h-[calc(100vh-12rem)]">
                   {loading ? (
                     <div className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-5 text-sm text-slate-500 shadow-sm">
                       <LoaderCircle className="h-4 w-4 animate-spin text-sky-600" />
@@ -506,8 +552,8 @@ export default function MapPage() {
                                     {service.name}
                                   </h2>
                                 </div>
-                                <div
-                                  className={`mt-1 h-4 w-4 shrink-0 rounded-full ${
+                                <p
+                                  className={`mt-1 h-4 shrink-0 rounded-xs text-xs px-1 ${
                                     service.status === "Open"
                                       ? "bg-green-500"
                                       : service.status === "Closed"
@@ -517,20 +563,17 @@ export default function MapPage() {
                                           : service.status === "Contact Provider"
                                             ? "bg-[#abf7b1]"
                                             : "bg-slate-300"
-                                  }`}
-                                />
+                                  }`}>
+                                {service.status}
+                                </p>
                               </div>
-
-                              {/* <p className="mt-2 line-clamp-3 text-sm leading-5 text-slate-600">
-                                {description}
-                              </p> */}
-
+                              
                               <div className="mt-auto space-y-1 pt-3 text-[0.72rem] text-slate-500">
                                 <p className="font-medium text-slate-900">
                                   {languages}
                                 </p>
                                 <p>
-                                  {location} · 
+                                  {location} · {formatRelativeUpdateDateShort(service.last_modified)}
                                 </p>
                               </div>
                             </div>
@@ -561,14 +604,11 @@ export default function MapPage() {
 
                           <div className="min-w-0">
                             <p className="truncate text-sm font-medium text-slate-700">{selectedServiceProvider}</p>
-                            <p className="truncate text-sm text-slate-500">
-                              {selectedService.service_types || selectedService.providerDetails?.services || "Immigration legal services"}
-                            </p>
                             <h2 className="mt-2 text-3xl font-semibold tracking-tight text-slate-900">
                               {selectedService.name}
                             </h2>
                             <p className="mt-2 text-sm text-slate-500">
-                              Posted {selectedService.status === "Active" ? "1 day ago" : "2 days ago"}
+                              {formatRelativeUpdateDate(selectedService.last_modified)}
                             </p>
                           </div>
                         </div>
@@ -580,6 +620,16 @@ export default function MapPage() {
                           >
                             Contact
                           </a>
+                          {selectedService?.link ? 
+                          <a
+                            href={selectedService?.link}
+                            target="_blank"
+                            className="inline-flex items-center justify-center rounded-md bg-[#4c8cc9] px-4 py-2.5 text-sm font-medium text-white shadow-sm transition-colors hover:bg-[#3d77b6]"
+                          >
+                            Register
+                          </a>
+                          : null}
+                          
                           <button
                             type="button"
                             onClick={() => setPanelView("map")}
@@ -595,7 +645,7 @@ export default function MapPage() {
                         <div className="mt-3 space-y-3 text-sm text-slate-700">
                           <div className="flex items-start gap-3">
                             <span className="mt-0.5 text-slate-400">◦</span>
-                            <span>{selectedService.service_types || selectedService.providerDetails?.services || "Free"}</span>
+                            <span>{selectedServiceLanguages}</span>
                           </div>
                           <div className="flex items-start gap-3">
                             <span className="mt-0.5 text-slate-400">◦</span>
@@ -603,12 +653,15 @@ export default function MapPage() {
                           </div>
                           <div className="flex items-start gap-3">
                             <span className="mt-0.5 text-slate-400">◦</span>
-                            <span>{selectedServiceLanguages}</span>
+                            <span><span className="font-bold">Service Types:</span> {selectedService.service_types}</span>
                           </div>
-                          <div className="flex items-start gap-3">
-                            <span className="mt-0.5 text-slate-400">◦</span>
-                            <span>{selectedService.status === "Active" ? "15/20 Available" : "Availability varies"}</span>
-                          </div>
+                        </div>
+                      </section>
+
+                      <section className="border-t border-slate-200 pt-4">
+                        <h3 className="text-lg font-semibold tracking-tight text-slate-900">About the Service</h3>
+                        <div className="mt-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 shadow-sm">
+                          <p className="text-sm leading-7 text-slate-700">{selectedServiceDescription}</p>
                         </div>
                       </section>
 
@@ -621,9 +674,6 @@ export default function MapPage() {
                                 <MapPinned size={22} />
                               </div>
                               <p className="mt-3 font-medium text-slate-700">{selectedServiceLocation}</p>
-                              <p className="mt-2 leading-6">
-                                Open the provider location in a new tab to view the full map.
-                              </p>
                               {selectedService.providerDetails?.google_maps_link ? (
                                 <a
                                   href={selectedService.providerDetails.google_maps_link}
@@ -631,28 +681,21 @@ export default function MapPage() {
                                   rel="noreferrer"
                                   className="mt-4 inline-flex items-center justify-center rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:bg-slate-100"
                                 >
-                                  Open map
+                                  Open in Google Maps
                                 </a>
                               ) : null}
                             </div>
                           </div>
                         </div>
-                      </section>
-
-                      <section className="border-t border-slate-200 pt-4">
-                        <h3 className="text-lg font-semibold tracking-tight text-slate-900">About the Service</h3>
-                        <div className="mt-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 shadow-sm">
-                          <p className="text-sm leading-7 text-slate-700">{selectedServiceDescription}</p>
-                        </div>
-                      </section>
+                      </section>                
                     </div>
                   </div>
                 ) : null}
 
                 <div className={isDescriptionView ? "hidden" : "flex-1 min-h-0 px-0 py-0"}>
-                  <div className="mx-auto flex h-full max-w-3xl min-h-0 flex-col justify-center">
-                    <div className="relative m-3 h-full overflow-hidden rounded-[28px] border border-slate-200 bg-slate-50 shadow-sm">
-                      <div ref={mapContainerRef} className="absolute inset-0 h-full w-full" />
+                  <div className="mx-auto flex h-full max-w-3xl min-h-0 flex-col justify-center px-0 py-0">
+                    <div className="relative h-full w-full overflow-hidden rounded-[10px] border border-slate-200 bg-slate-50 shadow-sm">
+                      <div ref={mapContainerRef} className="absolute inset-0 w-full" />
 
                       {!loading && !error && !filteredServices.some((service) => providerCoordinates[getProviderRecordId(service)]) ? (
                         <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-white/70 px-6 text-center">
