@@ -177,6 +177,10 @@ function matchesSearch(service: ServiceWithProvider, query: string) {
 
 export default function MapPage() {
   const [search, setSearch] = useState("");
+  const [providerFilter, setProviderFilter] = useState("All Providers");
+  const [languageFilter, setLanguageFilter] = useState("Any Language");
+  const [statusFilter, setStatusFilter] = useState("All Statuses");
+  const [openFilterMenu, setOpenFilterMenu] = useState<"provider" | "language" | "status" | null>(null);
   const [providers, setProviders] = useState<Provider[]>([]);
   const [services, setServices] = useState<Service[]>([]);
   const [loading, setLoading] = useState(true);
@@ -241,6 +245,28 @@ export default function MapPage() {
     return new Map(providers.map((provider) => [provider.id, provider]));
   }, [providers]);
 
+  const providerOptions = useMemo(() => {
+    return ["All Providers", ...providers.map((provider) => provider.name).filter(Boolean).sort((left, right) => left.localeCompare(right))];
+  }, [providers]);
+
+  const languageOptions = useMemo(() => {
+    const uniqueLanguages = new Set<string>();
+
+    providers.forEach((provider) => {
+      provider.language_support.forEach((language) => {
+        if (language) {
+          uniqueLanguages.add(language);
+        }
+      });
+    });
+
+    return ["Any Language", ...Array.from(uniqueLanguages).sort((left, right) => left.localeCompare(right))];
+  }, [providers]);
+
+  const statusOptions = useMemo(() => {
+    return ["All Statuses", "Open", "Contact Provider", "Waitlist", "Closed"];
+  }, []);
+
   const servicesWithProviders = useMemo<ServiceWithProvider[]>(() => {
     return services.map((service) => ({
       ...service,
@@ -250,8 +276,19 @@ export default function MapPage() {
 
   const filteredServices = useMemo(() => {
     const normalizedSearch = normalizeText(search);
-    return servicesWithProviders.filter((service) => matchesSearch(service, normalizedSearch));
-  }, [search, servicesWithProviders]);
+    return servicesWithProviders.filter((service) => {
+      const providerName = service.providerDetails?.name || "";
+      const serviceLanguages = service.providerDetails?.language_support || [];
+      const matchesProvider = providerFilter === "All Providers" || providerName === providerFilter;
+      const matchesLanguage =
+        languageFilter === "Any Language" ||
+        serviceLanguages.includes(languageFilter) ||
+        serviceLanguages.includes("All Languages");
+      const matchesStatus = statusFilter === "All Statuses" || service.status === statusFilter;
+
+      return matchesSearch(service, normalizedSearch) && matchesProvider && matchesLanguage && matchesStatus;
+    });
+  }, [languageFilter, providerFilter, search, servicesWithProviders, statusFilter]);
 
   const selectedService = useMemo(() => {
     return filteredServices.find((service) => service.id === selectedServiceId) ?? null;
@@ -263,6 +300,25 @@ export default function MapPage() {
       setPanelView("map");
     }
   }, [selectedService, selectedServiceId]);
+
+  useEffect(() => {
+    if (openFilterMenu === null) {
+      return;
+    }
+
+    const handlePointerDown = (event: PointerEvent) => {
+      const target = event.target as HTMLElement | null;
+      if (!target?.closest("[data-filter-menu-root]")) {
+        setOpenFilterMenu(null);
+      }
+    };
+
+    window.addEventListener("pointerdown", handlePointerDown);
+
+    return () => {
+      window.removeEventListener("pointerdown", handlePointerDown);
+    };
+  }, [openFilterMenu]);
 
   useEffect(() => {
     let cancelled = false;
@@ -424,9 +480,55 @@ export default function MapPage() {
     : null;
 
   const selectedServiceLocation = selectedService?.providerDetails?.address?.split(",")[0] || "Location unavailable";
-  const selectedServiceLanguages = selectedService?.providerDetails?.language_support?.slice(0, 3).join(", ") || "Language support varies";
+  const selectedServiceLanguages = selectedService?.providerDetails?.language_support?.join(", ") || "Language support varies";
   const selectedServiceProvider = selectedService?.providerDetails?.name || "Provider unavailable";
   const isDescriptionView = panelView === "description" && Boolean(selectedService);
+  const activeLanguageFilter = languageFilter !== "Any Language" ? languageFilter : null;
+
+  useEffect(() => {
+    if (!providerOptions.includes(providerFilter)) {
+      setProviderFilter("All Providers");
+    }
+  }, [providerFilter, providerOptions]);
+
+  useEffect(() => {
+    if (!languageOptions.includes(languageFilter)) {
+      setLanguageFilter("Any Language");
+    }
+  }, [languageFilter, languageOptions]);
+
+  useEffect(() => {
+    if (!statusOptions.includes(statusFilter)) {
+      setStatusFilter("All Statuses");
+    }
+  }, [statusFilter, statusOptions]);
+
+  const filterButtons = [
+    {
+      key: "provider" as const,
+      label: "Provider",
+      defaultValue: "All Providers",
+      value: providerFilter,
+      options: providerOptions,
+      onSelect: setProviderFilter,
+    },
+    {
+      key: "language" as const,
+      label: "Languages",
+      defaultValue: "Any Language",
+      value: languageFilter,
+      options: languageOptions,
+      onSelect: setLanguageFilter,
+    },
+    {
+      key: "status" as const,
+      label: "Status",
+      defaultValue: "All Statuses",
+      value: statusFilter,
+      options: statusOptions,
+      onSelect: setStatusFilter,
+    },
+  ];
 
   useEffect(() => {
     if (panelView !== "map" || !mapRef.current) {
@@ -475,27 +577,54 @@ export default function MapPage() {
                   ) : null}
                 </div>
 
-                <button
-                  type="button"
-                  className="inline-flex items-center gap-2 rounded-full border border-[#a8d0e6] bg-white px-4 py-3 text-sm font-medium text-slate-700 shadow-sm"
-                >
-                  <span>Provider</span>
-                  <ChevronDown size={14} />
-                </button>
-                <button
-                  type="button"
-                  className="inline-flex items-center gap-2 rounded-full border border-[#a8d0e6] bg-white px-4 py-3 text-sm font-medium text-slate-700 shadow-sm"
-                >
-                  <span>Languages</span>
-                  <ChevronDown size={14} />
-                </button>
-                <button
-                  type="button"
-                  className="inline-flex items-center gap-2 rounded-full border border-[#a8d0e6] bg-white px-4 py-3 text-sm font-medium text-slate-700 shadow-sm"
-                >
-                  <span>Status</span>
-                  <ChevronDown size={14} />
-                </button>
+                {filterButtons.map((filter) => {
+                  const isOpen = openFilterMenu === filter.key;
+
+                  return (
+                    <div key={filter.key} className="relative" data-filter-menu-root>
+                      <button
+                        type="button"
+                        onClick={() => setOpenFilterMenu(isOpen ? null : filter.key)}
+                        className={`inline-flex items-center gap-2 rounded-full border px-4 py-3 text-sm font-medium shadow-sm transition-colors cursor-pointer ${
+                            filter.value === filter.defaultValue
+                            ? "border-[#a8d0e6] bg-white text-slate-700"
+                            : "border-sky-200 bg-[#f7fbff] text-sky-800"
+                        }`}
+                        aria-expanded={isOpen}
+                        aria-haspopup="listbox"
+                      >
+                          <span>{filter.value === filter.defaultValue ? filter.label : filter.value}</span>
+                        <ChevronDown size={14} className={isOpen ? "rotate-180 transition-transform" : "transition-transform"} />
+                      </button>
+
+                      {isOpen ? (
+                        <div className="absolute left-0 top-[calc(100%+0.5rem)] z-20 min-w-60 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_18px_50px_rgba(15,23,42,0.12)]">
+                          <div className="max-h-72 overflow-y-auto p-2">
+                            {filter.options.map((option) => {
+                              const isActive = filter.value === option;
+                              return (
+                                <button
+                                  key={option}
+                                  type="button"
+                                  onClick={() => {
+                                    filter.onSelect(option);
+                                    setOpenFilterMenu(null);
+                                  }}
+                                  className={`flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-sm transition-colors cursor-pointer ${
+                                    isActive ? "bg-sky-50 text-sky-800" : "text-slate-700 hover:bg-slate-50"
+                                  }`}
+                                >
+                                  <span>{option}</span>
+                                  {isActive ? <span className="text-xs font-semibold uppercase tracking-wide">Selected</span> : null}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      ) : null}
+                    </div>
+                  );
+                })}
               </div>
 
               <div className="rounded-[24px] bg-white p-0">
@@ -516,7 +645,11 @@ export default function MapPage() {
                   ) : (
                     filteredServices.map((service) => {
                       const provider = service.providerDetails;
-                      const languages = provider?.language_support?.slice(0, 3).join(", ") || "Not listed";
+                      const languageList = provider?.language_support || [];
+                      const visibleLanguages = activeLanguageFilter && languageList.includes(activeLanguageFilter)
+                        ? [activeLanguageFilter, ...languageList.filter((language) => language !== activeLanguageFilter)]
+                        : languageList;
+                      const languages = visibleLanguages.join(", ") || "Not listed";
                       const location = provider?.address?.split(",")[0] || "Location unavailable";
                       const providerName = provider?.name || "Provider unavailable";
                       const isSelected = selectedServiceId === service.id;
