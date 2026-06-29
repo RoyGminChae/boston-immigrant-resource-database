@@ -15,6 +15,7 @@ import footerLink from './footerLink';
 import forumPost from './forumPost';
 import forumComment from './forumComment';
 import forumSettings from './forumSettings';
+import resourceSection from './resourceSection';
 
 export const schemaTypes = [
   stat,
@@ -34,4 +35,5 @@ export const schemaTypes = [
   forumPost,
   forumComment,
   forumSettings,
+  resourceSection,
 ];
