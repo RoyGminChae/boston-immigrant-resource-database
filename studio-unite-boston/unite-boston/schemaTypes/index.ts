@@ -12,6 +12,9 @@ import contactSettings from './contactSettings';
 import footerColumn from './footerColumn';
 import navLink from './navLink';
 import footerLink from './footerLink';
+import forumPost from './forumPost';
+import forumComment from './forumComment';
+import forumSettings from './forumSettings';
 
 export const schemaTypes = [
   stat,
@@ -28,4 +31,7 @@ export const schemaTypes = [
   footerColumn,
   navLink,
   footerLink,
+  forumPost,
+  forumComment,
+  forumSettings,
 ];
