@@ -17,7 +17,7 @@ interface MenuItem {
 const Sidebar: React.FC<SidebarProps> = ({ isOpen, activePage = "About BIRD" }) => {
   const workflowItems: MenuItem[] = [
     { name: "Community Forum", href: "/community", icon: <Users size={20} /> },
-    { name: "Search Resources", href: "/resources", icon: <Search size={20} /> },
+    { name: "Search Resources", href: "/map", icon: <Search size={20} /> },
     { name: "Saved Resources", href: "/saved", icon: <Bookmark size={20} /> },
   ];
 

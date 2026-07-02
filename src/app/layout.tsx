@@ -19,8 +19,8 @@ export const metadata: Metadata = {
   title: "Boston Immigrant Resource Database",
   description: "",
   icons: {
-    icon: '/icon.png',
-    shortcut: '/icon.png',
+    icon: '/icon.svg',
+    shortcut: '/icon.svg',
   },
 };
 
