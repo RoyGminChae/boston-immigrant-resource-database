@@ -8,7 +8,7 @@ import { Play } from 'lucide-react'
 import Sidebar from '@/components/marketing/Sidebar'
 
 export default function ContactPage() {
-  const [sidebarOpen, setSidebarOpen] = useState(true)
+  const [sidebarOpen] = useState(true)
   const [formData, setFormData] = useState({
     organization: '',
     firstName: '',
