@@ -7,29 +7,12 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { getErrorMessage, getRequiredFormString } from "@/features/auth/auth-helpers";
 
-import { saveRegisteredUser, type SaveRegisteredUserInput } from "./actions";
-import { useRegisterClerkMethods } from "./clerk-sign-up-methods";
+import { saveRegisteredUser, type SaveRegisteredUserInput } from "./save-registered-user";
+import { useClerkSignUp } from "./use-clerk-sign-up";
 
 type PendingRegisteredUserInput = Omit<SaveRegisteredUserInput, "clerkUserId">;
-
-function getRequiredString(formData: FormData, fieldName: string) {
-  const value = formData.get(fieldName);
-
-  if (typeof value !== "string" || !value.trim()) {
-    throw new Error(`${fieldName} is required.`);
-  }
-
-  return value.trim();
-}
-
-function getErrorMessage(error: unknown) {
-  if (error instanceof Error) {
-    return error.message;
-  }
-
-  return "Registration could not be completed.";
-}
 
 export function RegisterForm() {
   const router = useRouter();
@@ -39,7 +22,7 @@ export function RegisterForm() {
     createClerkSignUp,
     isSubmitting,
     verifyEmailCode,
-  } = useRegisterClerkMethods();
+  } = useClerkSignUp();
   const [errorMessage, setErrorMessage] = useState<string>();
   const [isSavingUser, setIsSavingUser] = useState(false);
   const [needsEmailVerification, setNeedsEmailVerification] = useState(false);
@@ -63,7 +46,7 @@ export function RegisterForm() {
 
       setNeedsEmailVerification(false);
       setPendingUserInput(undefined);
-      setErrorMessage(getErrorMessage(error));
+      setErrorMessage(getErrorMessage(error, "Registration could not be completed."));
     } finally {
       setIsSavingUser(false);
     }
@@ -82,14 +65,14 @@ export function RegisterForm() {
 
     const formData = new FormData(event.currentTarget);
     const userInput = {
-      organizationName: getRequiredString(formData, "organizationName"),
-      website: getRequiredString(formData, "website"),
-      phoneNumber: getRequiredString(formData, "primaryPhoneNumber"),
-      email: getRequiredString(formData, "email"),
+      organizationName: getRequiredFormString(formData, "organizationName"),
+      website: getRequiredFormString(formData, "website"),
+      phoneNumber: getRequiredFormString(formData, "primaryPhoneNumber"),
+      email: getRequiredFormString(formData, "email"),
     };
-    const password = getRequiredString(formData, "password");
-    const confirmPassword = getRequiredString(formData, "confirmPassword");
-    const username = getRequiredString(formData, "username");
+    const password = getRequiredFormString(formData, "password");
+    const confirmPassword = getRequiredFormString(formData, "confirmPassword");
+    const username = getRequiredFormString(formData, "username");
 
     if (password !== confirmPassword) {
       setErrorMessage("Passwords do not match.");
@@ -112,7 +95,7 @@ export function RegisterForm() {
 
       await finishRegistration(userInput, result.clerkUserId);
     } catch (error) {
-      setErrorMessage(getErrorMessage(error));
+      setErrorMessage(getErrorMessage(error, "Registration could not be completed."));
     }
   }
 
@@ -121,7 +104,7 @@ export function RegisterForm() {
     setErrorMessage(undefined);
 
     const formData = new FormData(event.currentTarget);
-    const code = getRequiredString(formData, "verificationCode");
+    const code = getRequiredFormString(formData, "verificationCode");
 
     if (!pendingUserInput) {
       setErrorMessage("Registration details are missing. Please start again.");
@@ -134,13 +117,17 @@ export function RegisterForm() {
       setNeedsEmailVerification(false);
       await finishRegistration(pendingUserInput, result.clerkUserId);
     } catch (error) {
-      setErrorMessage(getErrorMessage(error));
+      setErrorMessage(getErrorMessage(error, "Registration could not be completed."));
     }
   }
 
   if (needsEmailVerification) {
     return (
-      <form onSubmit={handleVerificationSubmit} className="mx-auto flex max-w-80.5 flex-col gap-3.5">
+      <form
+        key="verification-form"
+        onSubmit={handleVerificationSubmit}
+        className="mx-auto flex max-w-80.5 flex-col gap-3.5"
+      >
         {errorMessage && (
           <p className="rounded-[0.22rem] bg-red-50 px-3 py-2 text-[0.72rem] font-medium text-red-700">
             {errorMessage}
@@ -175,7 +162,11 @@ export function RegisterForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="mx-auto flex max-w-80.5 flex-col gap-3.5">
+    <form
+      key="registration-form"
+      onSubmit={handleSubmit}
+      className="mx-auto flex max-w-80.5 flex-col gap-3.5"
+    >
       {errorMessage && (
         <p className="rounded-[0.22rem] bg-red-50 px-3 py-2 text-[0.72rem] font-medium text-red-700">
           {errorMessage}

@@ -1,7 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 
-import { LoginForm } from "./login-form";
+import { LoginForm } from "@/features/auth/login/login-form";
 
 export default function Login() {
     return (

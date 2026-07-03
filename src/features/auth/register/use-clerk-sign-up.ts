@@ -2,21 +2,13 @@
 
 import { useSignUp } from "@clerk/nextjs";
 
+import { throwIfClerkError } from "@/features/auth/auth-helpers";
+
 export type RegisterClerkValues = {
   email: string;
   username: string;
   password: string;
 };
-
-type ClerkMethodResult = {
-  error: Error | null;
-};
-
-function throwIfClerkError(result: ClerkMethodResult) {
-  if (result.error) {
-    throw result.error;
-  }
-}
 
 function getSignUpState(signUp: ReturnType<typeof useSignUp>["signUp"]) {
   return {
@@ -27,7 +19,7 @@ function getSignUpState(signUp: ReturnType<typeof useSignUp>["signUp"]) {
   };
 }
 
-export function useRegisterClerkMethods() {
+export function useClerkSignUp() {
   const { errors, fetchStatus, signUp } = useSignUp();
 
   async function createClerkSignUp(values: RegisterClerkValues) {

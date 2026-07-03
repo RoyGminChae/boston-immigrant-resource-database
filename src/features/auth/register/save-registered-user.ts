@@ -3,6 +3,7 @@
 import { auth } from "@clerk/nextjs/server";
 import { clerkClient } from "@clerk/nextjs/server";
 
+import { requireNonEmptyString } from "@/features/auth/auth-helpers";
 import { createUser } from "@/lib/airtable";
 
 export type SaveRegisteredUserInput = {
@@ -12,14 +13,6 @@ export type SaveRegisteredUserInput = {
   phoneNumber: string;
   email: string;
 };
-
-function getRequiredString(value: string, fieldName: string) {
-  if (!value.trim()) {
-    throw new Error(`${fieldName} is required.`);
-  }
-
-  return value.trim();
-}
 
 function getPrimaryEmail(user: Awaited<ReturnType<Awaited<ReturnType<typeof clerkClient>>["users"]["getUser"]>>) {
   return user.emailAddresses.find(
@@ -62,10 +55,10 @@ export async function saveRegisteredUser(input: SaveRegisteredUserInput) {
   try {
     await createUser({
       clerkUserId,
-      organizationName: getRequiredString(input.organizationName, "organizationName"),
-      website: getRequiredString(input.website, "website"),
-      phoneNumber: getRequiredString(input.phoneNumber, "phoneNumber"),
-      email: getRequiredString(input.email, "email"),
+      organizationName: requireNonEmptyString(input.organizationName, "organizationName"),
+      website: requireNonEmptyString(input.website, "website"),
+      phoneNumber: requireNonEmptyString(input.phoneNumber, "phoneNumber"),
+      email: requireNonEmptyString(input.email, "email"),
     });
   } catch {
     try {

@@ -135,7 +135,6 @@ export async function createClientReferral(
 }
 
 export async function createUser(input: CreateUserInput): Promise<CreateUserResult> {
-	throw new Error("Testing Airtable failure.");
 	requireAirtableApiKey();
 
 	const record = await userTable.create(

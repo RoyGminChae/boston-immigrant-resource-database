@@ -1,44 +1,16 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
-import { useSignIn } from "@clerk/nextjs";
-import { useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { getErrorMessage, getRequiredFormString } from "@/features/auth/auth-helpers";
 
-type ClerkMethodResult = {
-  error: Error | null;
-};
-
-function getRequiredString(formData: FormData, fieldName: string) {
-  const value = formData.get(fieldName);
-
-  if (typeof value !== "string" || !value.trim()) {
-    throw new Error(`${fieldName} is required.`);
-  }
-
-  return value.trim();
-}
-
-function throwIfClerkError(result: ClerkMethodResult) {
-  if (result.error) {
-    throw result.error;
-  }
-}
-
-function getErrorMessage(error: unknown) {
-  if (error instanceof Error) {
-    return error.message;
-  }
-
-  return "Sign in could not be completed.";
-}
+import { useClerkSignIn } from "./use-clerk-sign-in";
 
 export function LoginForm() {
-  const router = useRouter();
-  const { fetchStatus, signIn } = useSignIn();
+  const { isSigningIn, signInWithPassword } = useClerkSignIn();
   const [errorMessage, setErrorMessage] = useState<string>();
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -48,30 +20,14 @@ export function LoginForm() {
     const formData = new FormData(event.currentTarget);
 
     try {
-      const result = await signIn.create({
-        identifier: getRequiredString(formData, "identifier"),
-        password: getRequiredString(formData, "password"),
+      await signInWithPassword({
+        identifier: getRequiredFormString(formData, "identifier"),
+        password: getRequiredFormString(formData, "password"),
       });
-
-      throwIfClerkError(result);
-
-      if (signIn.status !== "complete") {
-        setErrorMessage("Additional verification is required before signing in.");
-        return;
-      }
-
-      const finalizeResult = await signIn.finalize();
-
-      throwIfClerkError(finalizeResult);
-
-      router.push("/contact");
-      router.refresh();
     } catch (error) {
-      setErrorMessage(getErrorMessage(error));
+      setErrorMessage(getErrorMessage(error, "Sign in could not be completed."));
     }
   }
-
-  const isSubmitting = fetchStatus === "fetching";
 
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
@@ -113,10 +69,10 @@ export function LoginForm() {
 
       <Button
         type="submit"
-        disabled={isSubmitting}
+        disabled={isSigningIn}
         className="h-12 w-full rounded-lg bg-[#5d93c7] text-base font-semibold text-white shadow-[0_10px_24px_rgba(93,147,199,0.28)] transition-colors hover:bg-[#4b81b6]"
       >
-        {isSubmitting ? "Signing In..." : "Sign In"}
+        {isSigningIn ? "Signing In..." : "Sign In"}
       </Button>
     </form>
   );
