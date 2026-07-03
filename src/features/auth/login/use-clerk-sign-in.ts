@@ -4,63 +4,76 @@ import { useSignIn } from "@clerk/nextjs/legacy";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
+const AFTER_SIGN_IN_PATH = "/contact";
+
+const SIGN_IN_ERROR_MESSAGES = {
+	loading: "Sign in is still loading. Please try again in a moment.",
+	missingSession: "We could not finish signing you in. Please try again.",
+	missingVerificationRequest: "Please request a verification code before continuing.",
+	unsupportedSignInStep:
+		"This sign-in needs another verification step that is not available on this page yet. Please contact support.",
+	unsupportedVerification:
+		"We need to verify this sign-in, but this account does not have a supported verification method. Please contact support.",
+	verificationIncomplete: "We could not verify that code. Please check it and try again.",
+};
+
 export type SignInWithPasswordInput = {
 	identifier: string;
 	password: string;
 };
 
-type EmailCodeClientTrustFactor = {
+type EmailCodeVerificationFactor = {
 	emailAddressId: string;
 	safeIdentifier?: string;
 	strategy: "email_code";
 };
 
-type PhoneCodeClientTrustFactor = {
+type PhoneCodeVerificationFactor = {
 	phoneNumberId: string;
 	safeIdentifier?: string;
 	strategy: "phone_code";
 };
 
-type ClientTrustFactor = EmailCodeClientTrustFactor | PhoneCodeClientTrustFactor;
+type VerificationFactor = EmailCodeVerificationFactor | PhoneCodeVerificationFactor;
 
-type ClerkSecondFactor = {
+type AvailableSecondFactor = {
 	emailAddressId?: string;
 	phoneNumberId?: string;
 	safeIdentifier?: string;
 	strategy: string;
 };
 
-function getClientTrustFactor(factors: ClerkSecondFactor[] | null | undefined) {
-	const emailCodeFactor = factors?.find(
-		(factor): factor is EmailCodeClientTrustFactor =>
-			factor.strategy === "email_code" && typeof factor.emailAddressId === "string",
-	);
+function isEmailCodeFactor(factor: AvailableSecondFactor): factor is EmailCodeVerificationFactor {
+	return factor.strategy === "email_code" && typeof factor.emailAddressId === "string";
+}
 
-	if (emailCodeFactor) {
-		return emailCodeFactor;
-	}
+function isPhoneCodeFactor(factor: AvailableSecondFactor): factor is PhoneCodeVerificationFactor {
+	return factor.strategy === "phone_code" && typeof factor.phoneNumberId === "string";
+}
 
-	return factors?.find(
-		(factor): factor is PhoneCodeClientTrustFactor =>
-			factor.strategy === "phone_code" && typeof factor.phoneNumberId === "string",
-	);
+function getVerificationFactor(factors: AvailableSecondFactor[] | null | undefined) {
+	return factors?.find(isEmailCodeFactor) ?? factors?.find(isPhoneCodeFactor);
+}
+
+function isCompleteSignIn(status: string | null) {
+	return status === "complete";
 }
 
 export function useClerkSignIn() {
 	const router = useRouter();
 	const { isLoaded, setActive, signIn } = useSignIn();
-	const [clientTrustFactor, setClientTrustFactor] = useState<ClientTrustFactor>();
+	const [verificationFactor, setVerificationFactor] = useState<VerificationFactor>();
 	const [isSigningIn, setIsSigningIn] = useState(false);
 
 	function getLoadedClerk() {
 		if (!isLoaded || !setActive || !signIn) {
-			throw new Error("Clerk is still loading. Please try again.");
+			throw new Error(SIGN_IN_ERROR_MESSAGES.loading);
 		}
 
 		return { setActive, signIn };
 	}
 
-	async function prepareClientTrustFactor(factor: ClientTrustFactor) {
+	async function sendVerificationCode(factor: VerificationFactor) {
 		const { signIn } = getLoadedClerk();
 
 		if (factor.strategy === "email_code") {
@@ -77,16 +90,27 @@ export function useClerkSignIn() {
 		});
 	}
 
-	async function completeSignIn(sessionId: string | null) {
+	async function activateSession(sessionId: string | null) {
 		const { setActive } = getLoadedClerk();
 
 		if (!sessionId) {
-			throw new Error("Clerk did not return a session for this sign-in.");
+			throw new Error(SIGN_IN_ERROR_MESSAGES.missingSession);
 		}
 
 		await setActive({ session: sessionId });
-		router.push("/contact");
+		router.push(AFTER_SIGN_IN_PATH);
 		router.refresh();
+	}
+
+	async function startVerificationStep(factors: AvailableSecondFactor[] | null | undefined) {
+		const factor = getVerificationFactor(factors);
+
+		if (!factor) {
+			throw new Error(SIGN_IN_ERROR_MESSAGES.unsupportedVerification);
+		}
+
+		await sendVerificationCode(factor);
+		setVerificationFactor(factor);
 	}
 
 	async function signInWithPassword(input: SignInWithPasswordInput) {
@@ -101,42 +125,17 @@ export function useClerkSignIn() {
 				strategy: "password",
 			});
 
-			if (signInAttempt.status === "complete") {
-				await completeSignIn(signInAttempt.createdSessionId);
+			if (isCompleteSignIn(signInAttempt.status)) {
+				await activateSession(signInAttempt.createdSessionId);
 				return;
 			}
 
 			if (signInAttempt.status === "needs_client_trust") {
-				const factor = getClientTrustFactor(signInAttempt.supportedSecondFactors);
-
-				if (!factor) {
-					const supportedSecondFactors = signInAttempt.supportedSecondFactors
-						?.map((secondFactor) => secondFactor.strategy)
-						.filter(Boolean)
-						.join(", ");
-
-					throw new Error(
-						`Clerk requires client trust verification, but this custom form does not support any of these second factors yet: ${
-							supportedSecondFactors || "none"
-						}.`,
-					);
-				}
-
-				await prepareClientTrustFactor(factor);
-				setClientTrustFactor(factor);
+				await startVerificationStep(signInAttempt.supportedSecondFactors);
 				return;
 			}
 
-			const supportedFactors = signInAttempt.supportedFirstFactors
-				?.map((factor) => factor.strategy)
-				.filter(Boolean)
-				.join(", ");
-
-			throw new Error(
-				`Clerk did not complete this sign-in. Status: ${
-					signInAttempt.status ?? "unknown"
-				}. Supported first factors: ${supportedFactors || "none"}.`,
-			);
+			throw new Error(SIGN_IN_ERROR_MESSAGES.unsupportedSignInStep);
 		} finally {
 			setIsSigningIn(false);
 		}
@@ -145,8 +144,8 @@ export function useClerkSignIn() {
 	async function verifyClientTrustCode(code: string) {
 		const { signIn } = getLoadedClerk();
 
-		if (!clientTrustFactor) {
-			throw new Error("No verification code has been requested yet.");
+		if (!verificationFactor) {
+			throw new Error(SIGN_IN_ERROR_MESSAGES.missingVerificationRequest);
 		}
 
 		setIsSigningIn(true);
@@ -154,44 +153,40 @@ export function useClerkSignIn() {
 		try {
 			const signInAttempt = await signIn.attemptSecondFactor({
 				code,
-				strategy: clientTrustFactor.strategy,
+				strategy: verificationFactor.strategy,
 			});
 
-			if (signInAttempt.status === "complete") {
-				await completeSignIn(signInAttempt.createdSessionId);
+			if (isCompleteSignIn(signInAttempt.status)) {
+				await activateSession(signInAttempt.createdSessionId);
 				return;
 			}
 
-			throw new Error(
-				`Clerk did not complete this verification. Status: ${
-					signInAttempt.status ?? "unknown"
-				}.`,
-			);
+			throw new Error(SIGN_IN_ERROR_MESSAGES.verificationIncomplete);
 		} finally {
 			setIsSigningIn(false);
 		}
 	}
 
 	async function resendClientTrustCode() {
-		if (!clientTrustFactor) {
-			throw new Error("No verification code has been requested yet.");
+		if (!verificationFactor) {
+			throw new Error(SIGN_IN_ERROR_MESSAGES.missingVerificationRequest);
 		}
 
 		setIsSigningIn(true);
 
 		try {
-			await prepareClientTrustFactor(clientTrustFactor);
+			await sendVerificationCode(verificationFactor);
 		} finally {
 			setIsSigningIn(false);
 		}
 	}
 
 	function restartSignIn() {
-		setClientTrustFactor(undefined);
+		setVerificationFactor(undefined);
 	}
 
 	return {
-		clientTrustFactor,
+		clientTrustFactor: verificationFactor,
 		isSigningIn,
 		resendClientTrustCode,
 		restartSignIn,
