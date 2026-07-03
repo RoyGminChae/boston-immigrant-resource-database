@@ -20,6 +20,10 @@ const sourceSans3 = Source_Sans_3({
 export const metadata: Metadata = {
   title: "Boston Immigrant Resource Database",
   description: "",
+  icons: {
+    icon: '/icon.svg',
+    shortcut: '/icon.svg',
+  },
 };
 
 export default function RootLayout({

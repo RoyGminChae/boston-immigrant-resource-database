@@ -33,6 +33,7 @@ export interface Service {
   service_types: string;
   provider_email: string;
   provider_record_ID: string;
+  last_modified?: string;
 }
 
 function normalizeLinkedRecordId(value: unknown) {
@@ -60,6 +61,21 @@ function getAttachmentUrl(value: unknown) {
   return typeof value === "string" ? value : "";
 }
 
+function getLastModifiedValue(record: Record<FieldSet>) {
+  const value = record.get("Last modified time") ?? record.get("Last Modified");
+
+  if (value instanceof Date) {
+    return value.toISOString();
+  }
+
+  if (typeof value === "string" && value.trim()) {
+    const parsedDate = new Date(value);
+    return Number.isNaN(parsedDate.getTime()) ? value.trim() : parsedDate.toISOString();
+  }
+
+  return "";
+}
+
 function getDisplayFieldValue(record: Record<FieldSet>, fieldNames: string[]) {
   for (const fieldName of fieldNames) {
     const value = record.get(fieldName);
@@ -68,7 +84,27 @@ function getDisplayFieldValue(record: Record<FieldSet>, fieldNames: string[]) {
     }
   }
 
+  const fields = (record as Record<string, unknown>).fields ?? {};
+  for (const value of Object.values(fields)) {
+    if (typeof value === "string" && value.trim()) {
+      return value.trim();
+    }
+
+    if (Array.isArray(value)) {
+      const joinedValue = value.filter((entry): entry is string => typeof entry === "string" && entry.trim()).join(", ");
+      if (joinedValue) {
+        return joinedValue;
+      }
+    }
+  }
+
   return record.id;
+}
+
+function getDisplayNameById(records: Record<FieldSet>[]) {
+  return new Map(
+    records.map((record) => [record.id, getDisplayFieldValue(record, ["Name", "Service Type", "Title"])])
+  );
 }
 
 function toProvider(r: Record<FieldSet>, languageNameById: Map<string, string>): Provider {
@@ -98,12 +134,13 @@ function toService(r: Record<FieldSet>): Service {
     id: r.id,
     provider: providerRecordId,
     provider_email: r.get("Provider Email") as string,
-    service_types: r.get("Service Types") as string,
+    service_types: normalizeLinkedRecordIds(r.get("Service Types")).join(", "),
     name: r.get("Name") as string,
     description: r.get("Description") as string | undefined,
     status: r.get("Status") as string,
     link: r.get("Link") as string | undefined,
     provider_record_ID: providerRecordId,
+    last_modified: getLastModifiedValue(r),
   };
 }
 
@@ -138,13 +175,38 @@ export async function getProviderById(id: string): Promise<Provider | null> {
 }
 
 export async function getAllServices(): Promise<Service[]> {
-  const records = await base("Services").select({ view: "Grid view" }).all();
-  return records.map(toService);
+  const [serviceRecords, serviceTypeRecords] = await Promise.all([
+    base("Services").select({ view: "Grid view" }).all(),
+    base("Service Types").select({ view: "Grid view" }).all(),
+  ]);
+
+  const serviceTypeNameById = getDisplayNameById(serviceTypeRecords);
+
+  return serviceRecords.map((record) => {
+    const service = toService(record);
+    const serviceTypeIds = normalizeLinkedRecordIds(record.get("Service Types"));
+
+    return {
+      ...service,
+      service_types: serviceTypeIds.map((serviceTypeId) => serviceTypeNameById.get(serviceTypeId) || serviceTypeId).join(", "),
+    };
+  });
 }
 
 export async function getServiceById(id: string): Promise<Service | null> {
   try {
-    return toService(await base("Services").find(id));
+    const [serviceRecord, serviceTypeRecords] = await Promise.all([
+      base("Services").find(id),
+      base("Service Types").select({ view: "Grid view" }).all(),
+    ]);
+
+    const serviceTypeNameById = getDisplayNameById(serviceTypeRecords);
+    const serviceTypeIds = normalizeLinkedRecordIds(serviceRecord.get("Service Types"));
+
+    return {
+      ...toService(serviceRecord),
+      service_types: serviceTypeIds.map((serviceTypeId) => serviceTypeNameById.get(serviceTypeId) || serviceTypeId).join(", "),
+    };
   } catch {
     return null;
   }

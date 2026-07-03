@@ -4,11 +4,13 @@ import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
 import { Play } from 'lucide-react'
 import Sidebar from '@/components/marketing/Sidebar'
 
 export default function ContactPage() {
-  const [sidebarOpen] = useState(true)
+  const [sidebarOpen, setSidebarOpen] = useState(true)
+  const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle')
   const [formData, setFormData] = useState({
     organization: '',
     firstName: '',
@@ -17,12 +19,12 @@ export default function ContactPage() {
     email: '',
     phone: '',
     purposeMethod: 'more-information',
-    media: null as File | null,
+    message: '',
   })
 
-  const [dragActive, setDragActive] = useState(false)
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleInputChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
     const { name, value } = e.target
     setFormData((prev) => ({ ...prev, [name]: value }))
   }
@@ -31,36 +33,48 @@ export default function ContactPage() {
     setFormData((prev) => ({ ...prev, [name]: value }))
   }
 
-  const handleDrag = (e: React.DragEvent<HTMLDivElement>) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    e.stopPropagation()
-    if (e.type === 'dragenter' || e.type === 'dragover') {
-      setDragActive(true)
-    } else if (e.type === 'dragleave') {
-      setDragActive(false)
+
+    setStatus('loading')
+
+    try {
+      const response = await fetch('/api/contact', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          organizationName: formData.organization,
+          firstName: formData.firstName,
+          lastName: formData.lastName,
+          primaryReasonForContact: formData.purposeMethod,
+          preferredMethodOfContact: formData.preferredMethod,
+          email: formData.email,
+          phoneNumber: formData.phone,
+          message: formData.message,
+        }),
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to submit contact request')
+      }
+
+      setStatus('success')
+      setFormData({
+        organization: '',
+        firstName: '',
+        lastName: '',
+        preferredMethod: 'email',
+        email: '',
+        phone: '',
+        purposeMethod: 'more-information',
+        message: '',
+      })
+    } catch (error) {
+      console.error('Form submission failed:', error)
+      setStatus('error')
     }
-  }
-
-  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault()
-    e.stopPropagation()
-    setDragActive(false)
-
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      setFormData((prev) => ({ ...prev, media: e.dataTransfer.files[0] }))
-    }
-  }
-
-  const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      setFormData((prev) => ({ ...prev, media: e.target.files![0] }))
-    }
-  }
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    console.log('Form submitted:', formData)
-    // Handle form submission here
   }
 
   const handleCancel = () => {
@@ -72,8 +86,9 @@ export default function ContactPage() {
       email: '',
       phone: '',
       purposeMethod: 'more-information',
-      media: null,
+      message: '',
     })
+    setStatus('idle')
   }
 
   return (
@@ -144,7 +159,7 @@ export default function ContactPage() {
                     <input
                       type="radio"
                       name="preferredMethod"
-                      value="email"
+                      value="Email"
                       checked={formData.preferredMethod === 'email'}
                       onChange={(e) => handleRadioChange('preferredMethod', e.target.value)}
                       className="h-4 w-4 cursor-pointer"
@@ -155,7 +170,7 @@ export default function ContactPage() {
                     <input
                       type="radio"
                       name="preferredMethod"
-                      value="phone"
+                      value="Phone"
                       checked={formData.preferredMethod === 'phone'}
                       onChange={(e) => handleRadioChange('preferredMethod', e.target.value)}
                       className="h-4 w-4 cursor-pointer"
@@ -191,7 +206,7 @@ export default function ContactPage() {
                   id="phone"
                   name="phone"
                   type="tel"
-                  placeholder="• Email Address *"
+                  placeholder="Phone Number"
                   value={formData.phone}
                   onChange={handleInputChange}
                   className="h-10 border-[#a8d0e6] bg-white text-sm placeholder:text-slate-400"
@@ -203,7 +218,7 @@ export default function ContactPage() {
           {/* Purpose Section */}
           <div>
             <Label className="mb-3 block text-xs font-medium text-slate-800">
-              Preferred Method of Contact
+              Why are you contacting us?
             </Label>
             <div className="flex gap-3">
               <label className="flex cursor-pointer items-center gap-2 rounded border border-[#a8d0e6] px-3 py-2 text-sm">
@@ -231,69 +246,44 @@ export default function ContactPage() {
             </div>
           </div>
 
-          {/* Link & Media Section */}
+          {/* Message Section */}
           <div>
-            <Label className="mb-3 block text-xs font-medium text-slate-800">
-              Link & Media
+            <Label htmlFor="message" className="mb-3 block text-xs font-medium text-slate-800">
+              Message
             </Label>
-            <div
-              onDragEnter={handleDrag}
-              onDragLeave={handleDrag}
-              onDragOver={handleDrag}
-              onDrop={handleDrop}
-              className={`flex min-h-28 cursor-pointer flex-col items-center justify-center rounded border-2 border-dashed transition-colors ${
-                dragActive
-                  ? 'border-[#4c8cc9] bg-blue-50'
-                  : 'border-[#d0dce6] bg-white'
-              }`}
-            >
-              <input
-                type="file"
-                onChange={handleFileInput}
-                className="hidden"
-                id="file-upload"
-              />
-              <label
-                htmlFor="file-upload"
-                className="flex flex-col items-center gap-2 text-center"
-              >
-                <svg
-                  className="h-5 w-5 text-slate-400"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3v-6"
-                  />
-                </svg>
-                <span className="text-xs text-slate-600">
-                  {formData.media
-                    ? `Selected: ${formData.media.name}`
-                    : 'Drag and Drop or upload media'}
-                </span>
-              </label>
-            </div>
+            <Textarea
+              id="message"
+              name="message"
+              placeholder="Tell us how we can help"
+              value={formData.message}
+              onChange={handleInputChange}
+              className="min-h-28 border-[#a8d0e6] bg-white text-sm placeholder:text-slate-400"
+              required
+            />
           </div>
+
+          {status === 'success' ? (
+            <p className="text-sm text-green-600">Your contact request was sent successfully.</p>
+          ) : null}
+          {status === 'error' ? (
+            <p className="text-sm text-red-600">Something went wrong. Please try again.</p>
+          ) : null}
 
           {/* Action Buttons */}
           <div className="flex gap-4 pt-6">
             <Button
               type="button"
               onClick={handleCancel}
-              className="h-10 rounded bg-[#4c8cc9] px-6 text-sm font-medium text-white hover:bg-[#3d6fa8]"
+              className="h-10 rounded bg-[#4c8cc9] px-6 text-sm font-medium text-white hover:bg-[#3d6fa8] cursor-pointer"
             >
               Cancel
             </Button>
             <Button
               type="submit"
-              className="ml-auto flex h-10 items-center gap-2 rounded bg-[#4c8cc9] px-6 text-sm font-medium text-white hover:bg-[#3d6fa8]"
+              disabled={status === 'loading'}
+              className="ml-auto flex h-10 items-center gap-2 rounded bg-[#4c8cc9] px-6 text-sm font-medium text-white hover:bg-[#3d6fa8] cursor-pointer"
             >
-              <Play className="h-4 w-4 fill-white" />
-              Submit
+              {status === 'loading' ? 'Submitting...' : 'Submit'}
             </Button>
           </div>
         </form>
