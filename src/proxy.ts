@@ -10,11 +10,11 @@ const signedInRedirectPaths = new Set([
 ])
 
 const protectedMarketingPaths = new Set([
-  '/saved',
-  '/contact',
+  // '/saved',
+  // '/contact',
   '/faq',
-  '/resources',
-  '/map',
+  // '/resources',
+  // '/map',
 ])
 
 function normalizePathname(pathname: string) {
