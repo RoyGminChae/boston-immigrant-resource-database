@@ -1,0 +1,26 @@
+"use client";
+
+import { useClerk } from "@clerk/nextjs";
+import { useState } from "react";
+
+export function AccessStatusSignOutButton() {
+	const { signOut } = useClerk();
+	const [isSigningOut, setIsSigningOut] = useState(false);
+
+	async function handleSignOut() {
+		setIsSigningOut(true);
+
+		await signOut({ redirectUrl: "/" });
+	}
+
+	return (
+		<button
+			type="button"
+			onClick={handleSignOut}
+			disabled={isSigningOut}
+			className="mt-3 inline-flex h-11 items-center justify-center rounded-lg border border-slate-300 bg-white px-5 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+		>
+			{isSigningOut ? "Logging out..." : "Log out"}
+		</button>
+	);
+}

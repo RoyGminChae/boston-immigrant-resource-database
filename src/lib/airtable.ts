@@ -1,5 +1,7 @@
 import Airtable from "airtable";
 
+import type { UserAccessStatus } from "@/lib/airtable-user-access";
+
 const AIRTABLE_BASE_ID = "appKHrrX5ekPYIQBm";
 const AIRTABLE_CONTACT_US_TABLE_NAME = "Contact Us Requests";
 const AIRTABLE_CLIENT_REFERRALS_TABLE_NAME = "Client Referrals";
@@ -46,6 +48,7 @@ type UserFieldSet = {
 	website: string;
 	phoneNumber: string;
 	email: string;
+	access?: UserAccessStatus;
 };
 
 export type CreateContactUsRequestInput = {
@@ -144,6 +147,7 @@ export async function createUser(input: CreateUserInput): Promise<CreateUserResu
 			website: input.website,
 			phoneNumber: input.phoneNumber,
 			email: input.email,
+			access: "pending",
 		},
 		{ typecast: true },
 	);
