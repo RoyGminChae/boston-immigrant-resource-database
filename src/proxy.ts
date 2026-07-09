@@ -1,7 +1,7 @@
 import { clerkMiddleware } from '@clerk/nextjs/server'
 import { NextResponse } from 'next/server'
 
-import { getUserAccessStatus, type UserAccessStatus } from './lib/airtable-user-access'
+import { getUserAccessStatus, type UserAccessStatus } from './lib/airtable'
 
 const ACCESS_STATUS_PATH = '/access-status'
 const APPROVED_REDIRECT_PATH = '/contact'
@@ -58,6 +58,7 @@ export default clerkMiddleware(async (auth, request) => {
   }
 
   const accessStatus = await getUserAccessStatus(userId)
+  console.log(accessStatus)
 
   if (accessStatus !== 'approved') {
     if (pathname === '/') {
