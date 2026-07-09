@@ -1,16 +1,27 @@
 "use client";
 
 import { useClerk } from "@clerk/nextjs";
-import { useState } from "react";
+import { useRef, useState } from "react";
 
 export function AccessStatusSignOutButton() {
 	const { signOut } = useClerk();
 	const [isSigningOut, setIsSigningOut] = useState(false);
+	const isSigningOutRef = useRef(false);
 
 	async function handleSignOut() {
+		if (isSigningOutRef.current) {
+			return;
+		}
+
+		isSigningOutRef.current = true;
 		setIsSigningOut(true);
 
-		await signOut({ redirectUrl: "/" });
+		try {
+			await signOut({ redirectUrl: "/" });
+		} finally {
+			isSigningOutRef.current = false;
+			setIsSigningOut(false);
+		}
 	}
 
 	return (
