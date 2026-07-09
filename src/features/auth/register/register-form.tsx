@@ -74,6 +74,11 @@ export function RegisterForm() {
     const confirmPassword = getRequiredFormString(formData, "confirmPassword");
     const username = getRequiredFormString(formData, "username");
 
+    if (password.length < 8) {
+      setErrorMessage("Password must be at least 8 characters.");
+      return;
+    }
+
     if (password !== confirmPassword) {
       setErrorMessage("Passwords do not match.");
       return;
