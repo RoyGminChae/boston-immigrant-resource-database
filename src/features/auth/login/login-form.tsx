@@ -5,8 +5,9 @@ import { useState, type FormEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { getErrorMessage, getRequiredFormString } from "@/features/auth/auth-helpers";
+import { getRequiredFormString } from "@/features/auth/auth-helpers";
 
+import { getSignInErrorMessage } from "./get-sign-in-error-message";
 import { useClerkSignIn } from "./use-clerk-sign-in";
 
 export function LoginForm() {
@@ -32,7 +33,7 @@ export function LoginForm() {
         password: getRequiredFormString(formData, "password"),
       });
     } catch (error) {
-      setErrorMessage(getErrorMessage(error, "Sign in could not be completed."));
+      setErrorMessage(getSignInErrorMessage(error, "Sign in could not be completed."));
     }
   }
 
@@ -45,7 +46,7 @@ export function LoginForm() {
     try {
       await verifyClientTrustCode(getRequiredFormString(formData, "code"));
     } catch (error) {
-      setErrorMessage(getErrorMessage(error, "Verification could not be completed."));
+      setErrorMessage(getSignInErrorMessage(error, "Verification could not be completed."));
     }
   }
 
@@ -55,7 +56,7 @@ export function LoginForm() {
     try {
       await resendClientTrustCode();
     } catch (error) {
-      setErrorMessage(getErrorMessage(error, "Verification code could not be resent."));
+      setErrorMessage(getSignInErrorMessage(error, "Verification code could not be resent."));
     }
   }
 
